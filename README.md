@@ -1,14 +1,6 @@
 # Acme Commerce — dbt Analytics with Cortex Code
 
-A demo project showing how AI coding agents can build, govern, and review dbt models on Snowflake using [Cortex Code](https://docs.snowflake.com/en/user-guide/cortex-code/cortex-code).
-
----
-
-## What This Demo Shows
-
-An AI agent reads a GitHub issue, interprets it through business architecture docs, generates dbt models, self-corrects when governance hooks block PII violations, commits and creates a PR, then **three review agents** each pull context from different organisational data sources (architecture docs, stakeholder emails, Slack messages, meeting transcripts) and synthesise it into actionable PR reviews. A human merges. CI/CD deploys to Snowflake.
-
-The throughline: **agents pull context from scattered organisational knowledge and synthesise it into actionable work — but governance guardrails and human-in-the-loop merge ensure control is never lost.**
+A dbt project on Snowflake with [Cortex Code](https://docs.snowflake.com/en/user-guide/cortex-code/cortex-code) extensibility — custom skills, agents, hooks, and CI/CD. The project includes a custom skill that teaches the agent about the business data architecture, governance hooks that enforce PII masking and naming conventions, and a multi-agent PR review system where each agent pulls context from different organisational data sources (architecture docs, stakeholder emails, Slack messages, meeting transcripts).
 
 ---
 
@@ -132,7 +124,7 @@ Hooks are shell scripts that run automatically before Cortex Code executes a too
 | Hook | Trigger | What It Checks |
 |------|---------|---------------|
 | `governance_check.sh` | `Edit` or `Write` on model files | PII columns in marts must use `mask_pii()`. Model names must follow `stg_`/`int_`/`dim_`/`fct_` convention. Logs every PASS/BLOCK to `GOVERNANCE_AUDIT` table in Snowflake. |
-| `no_merge_check.sh` | `Bash` commands | Blocks `gh pr merge`, `gh api .../merge`, and `git push ... main`. Agents can create PRs but cannot merge — only humans can. |
+| `no_merge_check.sh` | `Bash` commands | Blocks `gh pr merge`, `gh api .../merge`, and `git push ... main`. Enforces human-in-the-loop merge. |
 | `sql_security_check.sh` | `snowflake_sql_execute` | Blocks `DROP`, `TRUNCATE`, and `DELETE` without `WHERE`. |
 
 The governance hook also writes an **audit trail** to `ECOM_ANALYTICS.DBT_PROJECT.GOVERNANCE_AUDIT` — every governance decision (PASS or BLOCK) is logged with timestamp, file path, and policy code. The Architecture review agent queries this table during PR review.
@@ -167,52 +159,6 @@ Triggers on push to `main` when `dbt_project/**` files change. Steps:
 6. Verify deployment
 
 Uses a `CI_DEPLOYER` service user with RSA key-pair auth. Runs in ~1.5 minutes.
-
----
-
-## Demo Flow
-
-### Pre-Demo
-```bash
-bash scripts/reset_demo.sh
-```
-Resets git, GitHub (PRs, issues, branches), and Snowflake to clean state. ~2 minutes.
-
-### Phase 1 — Read Issue & Interpret with Business Architecture (~1 min)
-> "Read GitHub issue #1 and tell me what we need to build"
-
-The agent reads the issue (CLV model with segmentation) and the business-architecture skill fires. It analyses affected domains, PII impact, model placement, compliance requirements.
-
-### Phase 2 — Generate dbt Models (~1-2 min)
-> "Build it"
-
-The agent generates `fct_customer_lifetime_value.sql` and its YAML schema. The governance hook runs on every file write — if the agent writes PII without `mask_pii()`, the hook blocks and the agent self-corrects. Every check is logged to the audit trail.
-
-**Talk track while agent works**: Explain the hook system, show the governance_check.sh code, point out the audit trail concept.
-
-### Phase 3 — Commit & Create PR (~30s)
-> "Commit and create a PR"
-
-Agent creates a feature branch, commits, pushes, creates a PR referencing "Closes #1". The no-merge guardrail prevents any merge attempt.
-
-### Phase 4 — Three Agents Review the PR (~1-2 min)
-> "Review the PR" (or invoke @pr-reviewer)
-
-The orchestrator spawns three reviewers in parallel. Each reads different context:
-- **Architecture agent** → queries the governance audit trail, checks compliance
-- **Stakeholder agent** → reads emails, maps requirements to implementation
-- **Team Knowledge agent** → reads Slack and meeting notes, surfaces tribal knowledge
-
-**Talk track while agents work**: Split screen — show the context files while explaining what each agent is reading. "Agent 1 is querying the governance audit trail right now. Agent 2 is reading stakeholder emails to check if every requirement was implemented. Agent 3 is reading Slack messages to surface warnings from the team."
-
-### Phase 5 — Human Merges (~30s)
-Switch to GitHub, review the three comments, merge the PR. The no-merge guardrail means only you can do this.
-
-### Phase 6 — CI/CD Deploys & Query Results (~2 min)
-CI/CD triggers automatically. While it runs, explain the pipeline. Once complete:
-> "Query the CLV data and show me the governance audit trail"
-
-Show masked emails, customer segments, and the full audit trail proving governance was enforced throughout.
 
 ---
 
@@ -299,7 +245,8 @@ model: claude-sonnet-4-5                   # Optional model override
 **Guidelines applied in this project:**
 
 - **Restrict tool access.** Only grant tools the agent actually needs. Our review agents get `Read`, `Glob`, `Grep`, `Bash` — no `Write` or `Edit` because reviewers should not modify code. The orchestrator additionally gets `Task` to spawn sub-agents.
-- **Use plain language for rules.** Claude 4.x models are highly responsive to system prompts. Aggressive language like "CRITICAL: You MUST..." can cause overtriggering. Use direct, clear statements: "Do not merge pull requests" works as well as "CRITICAL: You CANNOT merge."
+- **Enforce boundaries with hooks, not instructions.** Don't tell agents what they can't do — prevent it structurally. A `no_merge_check.sh` hook that blocks `gh pr merge` commands is more reliable than a prompt rule saying "do not merge." Hooks are deterministic; prompt instructions are probabilistic.
+- **Use plain language.** Claude 4.x models are highly responsive to system prompts. Aggressive language like "CRITICAL: You MUST..." can cause overtriggering. Direct statements work equally well.
 - **Define data sources explicitly.** Each agent's prompt lists exactly which files to read and what to look for in them. This is more reliable than hoping the agent will find relevant context on its own.
 - **Provide structured output formats.** Include a template for the agent's output. This ensures consistency across runs and makes the output parseable.
 - **Use the Task tool for orchestration.** The orchestrator agent spawns sub-agents via the Task tool with `subagent_type: "general-purpose"`. Launch all sub-agents in a single message (parallel tool calls) for speed.

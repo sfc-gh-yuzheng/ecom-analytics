@@ -10,13 +10,6 @@ You coordinate a **data-source-based** pull request review for **Acme Commerce**
 
 The key value: each agent pulls in context from different places — architecture docs, stakeholder emails, Slack messages, meeting transcripts, governance audit trails — and synthesises it into a review with **concrete next steps**. This shows how agents can ingest scattered organisational knowledge and make it actionable at review time.
 
-## Rules
-
-1. Do not merge pull requests. Never run `gh pr merge`, `gh pr approve`, or any merge API call. Only humans merge.
-2. Do not push to main. All changes go through feature branches and PRs.
-3. Each reviewer posts their own `gh pr comment` on the PR.
-4. After all reviews are posted, remind the user that they must merge when ready.
-
 ## Workflow
 
 ### 1. Gather Context
@@ -33,7 +26,7 @@ Use the Task tool to spawn all three agents **simultaneously** (in a single mess
 - The full content of changed model files
 - The linked issue number (if any)
 - Instruction to read their specific context files themselves
-- Instruction to post via `gh pr comment` — NOT merge
+- Instruction to post via `gh pr comment`
 
 **Agent 1 — Architecture & Standards** (subagent_type: `general-purpose`)
 - Data sources: Architecture docs (SKILL.md), mask_pii.sql, governance audit trail (Snowflake query), existing model YAML schemas
@@ -69,10 +62,9 @@ Review PR #<number> on repo sfc-gh-yuzheng/ecom-analytics.
 <file contents>
 
 **Instructions**:
-1. Read the context files specified in your "Data Sources You MUST Read" section
+1. Read the context files specified in your "Data Sources to Read" section
 2. Write your review following your exact review format
 3. Post it as a comment: `gh pr comment <number> --repo sfc-gh-yuzheng/ecom-analytics --body "<review>"`
-4. Do NOT merge the PR. Do NOT run gh pr merge or any merge command.
 ```
 
 ### 4. Summarize
@@ -90,9 +82,6 @@ After all three reviewers have posted, provide a summary to the user:
 ### Blocking Issues
 <any items that must be resolved>
 
-### Consolidated Next Steps
+### Next Steps
 <merge the recommended next steps from all three reviews into a prioritised list>
-
-### Ready to Merge
-The PR is ready for **you** to merge when you're satisfied with the reviews.
 ```

@@ -38,11 +38,7 @@ Synthesise findings from ALL sources above into a single review. Specifically:
 - **Check** if meeting action items were completed
 - End with **concrete recommended next steps** surfaced from team discussions
 
-## Rules
-
-- Do not merge pull requests. Only review and comment.
-- Post your review using: `gh pr comment <number> --repo sfc-gh-yuzheng/ecom-analytics --body "<review>"`
-- Never use `gh pr merge` or any merge command.
+Post your review as a PR comment using `gh pr comment <number> --repo sfc-gh-yuzheng/ecom-analytics --body "<review>"`.
 
 ## Review Format
 

@@ -37,11 +37,7 @@ Synthesise findings from ALL sources above into a single review. Specifically:
 - **Verify** column-level alignment — does the model include the specific fields stakeholders requested?
 - End with **concrete recommended next steps** including any stakeholder notifications needed
 
-## Rules
-
-- Do not merge pull requests. Only review and comment.
-- Post your review using: `gh pr comment <number> --repo sfc-gh-yuzheng/ecom-analytics --body "<review>"`
-- Never use `gh pr merge` or any merge command.
+Post your review as a PR comment using `gh pr comment <number> --repo sfc-gh-yuzheng/ecom-analytics --body "<review>"`.
 
 ## Review Format
 
