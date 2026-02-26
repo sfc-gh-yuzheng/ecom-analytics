@@ -12,7 +12,7 @@ REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 REPO="sfc-gh-yuzheng/ecom-analytics"
 SNOWFLAKE_CONN="demo"
 DATABASE="ECOM_ANALYTICS"
-SCHEMA="DBT_DEV"
+BASELINE_COMMIT="598ff17"  # Latest baseline commit — includes reset script + best practices
 
 cd "$REPO_DIR"
 
@@ -20,9 +20,9 @@ echo "========================================"
 echo "  Demo Reset — $(date)"
 echo "========================================"
 
-# ----- 1. Close open PRs -----
+# ----- 1. Close open PRs and delete feature branches -----
 echo ""
-echo "[1/7] Closing open pull requests..."
+echo "[1/6] Closing open pull requests..."
 open_prs=$(gh pr list --repo "$REPO" --state open --json number --jq '.[].number' 2>/dev/null || true)
 if [ -n "$open_prs" ]; then
   for pr in $open_prs; do
@@ -33,9 +33,11 @@ else
   echo "  No open PRs found."
 fi
 
-# ----- 2. Delete remote feature branches -----
+# ----- 2. Delete remote + local feature branches -----
 echo ""
-echo "[2/7] Cleaning up remote feature branches..."
+echo "[2/6] Cleaning up branches..."
+git fetch origin --prune 2>/dev/null || true
+
 remote_branches=$(git branch -r --list 'origin/*' | grep -v 'origin/main' | grep -v 'origin/HEAD' | sed 's|origin/||' || true)
 if [ -n "$remote_branches" ]; then
   for branch in $remote_branches; do
@@ -43,31 +45,30 @@ if [ -n "$remote_branches" ]; then
     git push origin --delete "$branch" 2>/dev/null || true
   done
 else
-  echo "  No feature branches found."
+  echo "  No remote feature branches."
 fi
 
-# ----- 3. Reset local git state -----
-echo ""
-echo "[3/7] Resetting local git to main..."
 git checkout main 2>/dev/null || true
-# Delete local feature branches
 local_branches=$(git branch --list | grep -v '^\* main$' | grep -v '^  main$' || true)
 if [ -n "$local_branches" ]; then
   for branch in $local_branches; do
-    branch=$(echo "$branch" | xargs)  # trim whitespace
+    branch=$(echo "$branch" | xargs)
     echo "  Deleting local branch: $branch"
     git branch -D "$branch" 2>/dev/null || true
   done
 fi
-git fetch origin
-git reset --hard origin/main
-git clean -fd
 
+# ----- 3. Reset git to baseline commit -----
+echo ""
+echo "[3/6] Resetting git to baseline (${BASELINE_COMMIT})..."
+git reset --hard "$BASELINE_COMMIT"
+git push origin main --force
+git clean -fd
 echo "  On commit: $(git log --oneline -1)"
 
 # ----- 4. Reopen GitHub issue #1 -----
 echo ""
-echo "[4/7] Reopening GitHub issue #1..."
+echo "[4/6] Reopening GitHub issue #1..."
 issue_state=$(gh issue view 1 --repo "$REPO" --json state --jq '.state' 2>/dev/null || echo "UNKNOWN")
 if [ "$issue_state" = "CLOSED" ]; then
   gh issue reopen 1 --repo "$REPO"
@@ -78,46 +79,62 @@ else
   echo "  Could not determine issue state: $issue_state"
 fi
 
-# ----- 5. Reset Snowflake DBT_DEV schema -----
+# ----- 5. Reset Snowflake schemas -----
 echo ""
-echo "[5/7] Resetting Snowflake schema ${DATABASE}.${SCHEMA}..."
-snow sql -c "$SNOWFLAKE_CONN" -q "DROP SCHEMA IF EXISTS ${DATABASE}.${SCHEMA};" 2>&1 || {
-  echo "  WARNING: Could not drop schema. You may need to run this manually:"
-  echo "    DROP SCHEMA IF EXISTS ${DATABASE}.${SCHEMA};"
-  echo "    CREATE SCHEMA ${DATABASE}.${SCHEMA};"
-}
-snow sql -c "$SNOWFLAKE_CONN" -q "CREATE SCHEMA IF NOT EXISTS ${DATABASE}.${SCHEMA};" 2>&1 || {
-  echo "  WARNING: Could not create schema."
-}
+echo "[5/6] Resetting Snowflake schemas..."
 
-# ----- 6. Redeploy base dbt project -----
-echo ""
-echo "[6/7] Redeploying base dbt project to Snowflake..."
+# Drop and recreate model schemas (clean slate)
+for SCHEMA in STAGING INTERMEDIATE MARTS; do
+  echo "  Resetting ${DATABASE}.${SCHEMA}..."
+  snow sql -c "$SNOWFLAKE_CONN" -q "DROP SCHEMA IF EXISTS ${DATABASE}.${SCHEMA} CASCADE;" 2>/dev/null || true
+  snow sql -c "$SNOWFLAKE_CONN" -q "CREATE SCHEMA ${DATABASE}.${SCHEMA};" 2>/dev/null || true
+done
+
+# Reset DBT_PROJECT schema (keep schema, recreate audit table)
+echo "  Resetting ${DATABASE}.DBT_PROJECT..."
+snow sql -c "$SNOWFLAKE_CONN" -q "DROP SCHEMA IF EXISTS ${DATABASE}.DBT_PROJECT CASCADE;" 2>/dev/null || true
+snow sql -c "$SNOWFLAKE_CONN" -q "CREATE SCHEMA ${DATABASE}.DBT_PROJECT;" 2>/dev/null || true
+snow sql -c "$SNOWFLAKE_CONN" -q "
+CREATE TABLE ${DATABASE}.DBT_PROJECT.GOVERNANCE_AUDIT (
+    ts TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    tool_name VARCHAR,
+    file_path VARCHAR,
+    governance VARCHAR,
+    detail VARCHAR
+);" 2>/dev/null || true
+
+# Redeploy and build dbt project
+echo "  Deploying dbt project..."
 snow dbt deploy ECOM_ANALYTICS_PROJECT \
   --source dbt_project \
   --database "$DATABASE" \
-  --schema "$SCHEMA" \
-  -c "$SNOWFLAKE_CONN" 2>&1 || {
-  echo "  WARNING: dbt deploy failed. You may need to deploy manually."
+  --schema DBT_PROJECT \
+  -c "$SNOWFLAKE_CONN" 2>/dev/null || {
+  echo "  WARNING: dbt deploy failed."
 }
 
+echo "  Running dbt build..."
 snow dbt execute -c "$SNOWFLAKE_CONN" \
   --database "$DATABASE" \
-  --schema "$SCHEMA" \
-  ECOM_ANALYTICS_PROJECT build 2>&1 || {
-  echo "  WARNING: dbt build failed. You may need to build manually."
+  --schema DBT_PROJECT \
+  ECOM_ANALYTICS_PROJECT build 2>&1 | tail -5 || {
+  echo "  WARNING: dbt build failed."
 }
 
-# ----- 7. Verify -----
+# ----- 6. Verify -----
 echo ""
-echo "[7/7] Verification..."
-echo "  Git commit: $(git log --oneline -1)"
-echo "  Git branch: $(git branch --show-current)"
-echo "  Open PRs:   $(gh pr list --repo "$REPO" --state open --json number --jq 'length' 2>/dev/null || echo 'unknown')"
-echo "  Issue #1:   $(gh issue view 1 --repo "$REPO" --json state --jq '.state' 2>/dev/null || echo 'unknown')"
+echo "[6/6] Verification..."
+echo "  Git commit:  $(git log --oneline -1)"
+echo "  Git branch:  $(git branch --show-current)"
+echo "  Open PRs:    $(gh pr list --repo "$REPO" --state open --json number --jq 'length' 2>/dev/null || echo 'unknown')"
+echo "  Issue #1:    $(gh issue view 1 --repo "$REPO" --json state --jq '.state' 2>/dev/null || echo 'unknown')"
 echo ""
-echo "  Snowflake objects in ${DATABASE}.${SCHEMA}:"
-snow sql -c "$SNOWFLAKE_CONN" -q "SHOW OBJECTS IN SCHEMA ${DATABASE}.${SCHEMA};" 2>&1 || echo "  Could not query Snowflake."
+echo "  Snowflake schemas:"
+snow sql -c "$SNOWFLAKE_CONN" -q "
+SELECT table_schema, table_name, table_type
+FROM ${DATABASE}.INFORMATION_SCHEMA.TABLES
+WHERE table_schema IN ('RAW','STAGING','INTERMEDIATE','MARTS','DBT_PROJECT')
+ORDER BY 1, 2;" 2>/dev/null || echo "  Could not query Snowflake."
 
 echo ""
 echo "========================================"
