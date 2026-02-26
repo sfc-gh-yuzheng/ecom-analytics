@@ -13,6 +13,8 @@ REPO="sfc-gh-yuzheng/ecom-analytics"
 SNOWFLAKE_CONN="demo"
 DATABASE="ECOM_ANALYTICS"
 BASELINE_TAG="demo-baseline"  # Git tag marking the clean starting point
+BACKUP_BRANCH="backup/clv-model"  # Persistent backup PR — survives resets
+BACKUP_PR=6                        # PR number for the backup branch
 
 cd "$REPO_DIR"
 
@@ -26,6 +28,10 @@ echo "[1/7] Closing open pull requests..."
 open_prs=$(gh pr list --repo "$REPO" --state open --json number --jq '.[].number' 2>/dev/null || true)
 if [ -n "$open_prs" ]; then
   for pr in $open_prs; do
+    if [ "$pr" -eq "$BACKUP_PR" ]; then
+      echo "  Skipping backup PR #$pr"
+      continue
+    fi
     echo "  Closing PR #$pr"
     gh pr close "$pr" --repo "$REPO" --delete-branch 2>/dev/null || true
   done
@@ -38,7 +44,7 @@ echo ""
 echo "[2/7] Cleaning up branches..."
 git fetch origin --prune 2>/dev/null || true
 
-remote_branches=$(git branch -r --list 'origin/*' | grep -v 'origin/main' | grep -v 'origin/HEAD' | sed 's|origin/||' || true)
+remote_branches=$(git branch -r --list 'origin/*' | grep -v 'origin/main' | grep -v 'origin/HEAD' | grep -v "origin/${BACKUP_BRANCH}" | sed 's|origin/||' || true)
 if [ -n "$remote_branches" ]; then
   for branch in $remote_branches; do
     echo "  Deleting remote branch: $branch"
@@ -53,6 +59,10 @@ local_branches=$(git branch --list | grep -v '^\* main$' | grep -v '^  main$' ||
 if [ -n "$local_branches" ]; then
   for branch in $local_branches; do
     branch=$(echo "$branch" | xargs)
+    if [ "$branch" = "$BACKUP_BRANCH" ]; then
+      echo "  Skipping backup branch: $branch"
+      continue
+    fi
     echo "  Deleting local branch: $branch"
     git branch -D "$branch" 2>/dev/null || true
   done
@@ -157,7 +167,7 @@ echo ""
 echo "[7/7] Verification..."
 echo "  Git commit:  $(git log --oneline -1)"
 echo "  Git branch:  $(git branch --show-current)"
-echo "  Open PRs:    $(gh pr list --repo "$REPO" --state open --json number --jq 'length' 2>/dev/null || echo 'unknown')"
+echo "  Open PRs:    $(gh pr list --repo "$REPO" --state open --json number --jq 'length' 2>/dev/null || echo 'unknown') (backup PR #${BACKUP_PR} preserved)"
 echo "  Issue #1:    $(gh issue view 1 --repo "$REPO" --json state --jq '.state' 2>/dev/null || echo 'unknown')"
 echo ""
 echo "  Snowflake schemas:"
