@@ -1,7 +1,7 @@
 {% macro mask_pii(column_name) %}
     case
-        when current_role() in ('ANALYST', 'REPORTER')
-        then regexp_replace({{ column_name }}, '.+@', '***@')
-        else {{ column_name }}
+        when is_role_in_session('PII_ALLOWED')
+        then {{ column_name }}
+        else regexp_replace({{ column_name }}, '.+@', '***@')
     end
 {% endmacro %}

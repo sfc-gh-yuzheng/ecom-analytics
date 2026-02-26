@@ -20,7 +20,7 @@ jobs:
       SNOWFLAKE_CONNECTIONS_CI_ROLE: ACCOUNTADMIN
       SNOWFLAKE_CONNECTIONS_CI_WAREHOUSE: COMPUTE_WH
       SNOWFLAKE_CONNECTIONS_CI_DATABASE: ECOM_ANALYTICS
-      SNOWFLAKE_CONNECTIONS_CI_SCHEMA: DBT_DEV
+      SNOWFLAKE_CONNECTIONS_CI_SCHEMA: DBT_PROJECT
 
     steps:
       - name: Checkout code
@@ -31,26 +31,31 @@ jobs:
         with:
           default-config-file-path: .github/snowflake-config.toml
 
-      - name: Create target schema if not exists
+      - name: Create target schemas if not exists
         run: |
           snow sql -q "CREATE DATABASE IF NOT EXISTS ECOM_ANALYTICS;" -c ci
-          snow sql -q "CREATE SCHEMA IF NOT EXISTS ECOM_ANALYTICS.DBT_DEV;" -c ci
+          snow sql -q "CREATE SCHEMA IF NOT EXISTS ECOM_ANALYTICS.DBT_PROJECT;" -c ci
+          snow sql -q "CREATE SCHEMA IF NOT EXISTS ECOM_ANALYTICS.STAGING;" -c ci
+          snow sql -q "CREATE SCHEMA IF NOT EXISTS ECOM_ANALYTICS.INTERMEDIATE;" -c ci
+          snow sql -q "CREATE SCHEMA IF NOT EXISTS ECOM_ANALYTICS.MARTS;" -c ci
 
       - name: Deploy dbt project
         run: |
           snow dbt deploy ECOM_ANALYTICS_PROJECT \
             --source dbt_project \
             --database ECOM_ANALYTICS \
-            --schema DBT_DEV \
+            --schema DBT_PROJECT \
             -c ci
 
       - name: Execute dbt build
         run: |
           snow dbt execute -c ci \
             --database ECOM_ANALYTICS \
-            --schema DBT_DEV \
+            --schema DBT_PROJECT \
             ECOM_ANALYTICS_PROJECT build
 
       - name: Verify deployment
         run: |
-          snow dbt list --in schema DBT_DEV --database ECOM_ANALYTICS -c ci
+          snow sql -q "SHOW VIEWS IN SCHEMA ECOM_ANALYTICS.STAGING;" -c ci
+          snow sql -q "SHOW VIEWS IN SCHEMA ECOM_ANALYTICS.INTERMEDIATE;" -c ci
+          snow sql -q "SHOW TABLES IN SCHEMA ECOM_ANALYTICS.MARTS;" -c ci

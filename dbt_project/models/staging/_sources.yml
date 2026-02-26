@@ -4,7 +4,11 @@ sources:
   - name: raw
     database: ECOM_ANALYTICS
     schema: RAW
+    description: "Raw e-commerce data loaded from CSV seeds"
     tables:
       - name: customers
+        description: "Raw customer records"
       - name: orders
+        description: "Raw order records"
       - name: payments
+        description: "Raw payment records"

@@ -8,5 +8,5 @@ ecom_analytics:
       role: ACCOUNTADMIN
       warehouse: COMPUTE_WH
       database: ECOM_ANALYTICS
-      schema: DBT_DEV
+      schema: DBT_PROJECT
       threads: 4
