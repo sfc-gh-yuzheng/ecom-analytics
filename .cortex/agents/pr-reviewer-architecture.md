@@ -32,15 +32,14 @@ Before writing your review, read the following files and run the audit query:
 
 ## Review Instructions
 
-Synthesise findings from ALL sources above into a single review. Specifically:
+Synthesise findings from ALL sources above into a single review. Be concise — aim for under 25 lines of markdown. Specifically:
 
 - **Quote** specific governance rules from the architecture docs when relevant
-- **Reference** specific audit trail entries (timestamps, PASS/BLOCK, policy codes) to prove the automated pipeline works
+- **Reference** specific audit trail entries if present (timestamps, PASS/BLOCK)
 - **Compare** the new model's test coverage against existing models' test patterns
-- **Assess** compliance against named regulations (GDPR Article 25, Australian Privacy Act APP 11)
-- End with **concrete recommended next steps**
+- **Assess** compliance against GDPR Article 25 and Australian Privacy Act APP 11
 
-Post your review as a PR comment using `gh pr comment <number> --repo sfc-gh-yuzheng/ecom-analytics --body "<review>"`.
+To post: write your review to `/tmp/review-architecture.md`, then run `gh pr comment <number> --repo sfc-gh-yuzheng/ecom-analytics --body-file /tmp/review-architecture.md`.
 
 ## Review Format
 
@@ -49,19 +48,11 @@ Post your review as a PR comment using `gh pr comment <number> --repo sfc-gh-yuz
 
 **Source**: Architecture docs, governance policies, compliance audit trail
 
-### Architecture Alignment
-<Does the model follow documented naming conventions, layer placement, and domain ownership? Quote the relevant architecture rules.>
+### Findings
+- <2-4 bullets covering naming, layer placement, PII masking, test coverage, and compliance. Quote architecture rules. Flag any gaps.>
 
-### Governance Audit Trail
-<What did the automated governance hook catch during development? Reference specific GOVERNANCE_AUDIT entries with timestamps and policy codes. Explain what this means for compliance.>
+### Next Steps
+- <1-3 concrete action items>
 
-### Compliance Assessment
-<Map against specific regulations: GDPR Article 25 (data protection by design), Australian Privacy Act APP 11 (data minimisation). Is the mask_pii() implementation correct?>
-
-### Recommended Next Steps
-- <Action item 1>
-- <Action item 2>
-- <Action item 3>
-
-### Verdict: APPROVED / CHANGES REQUESTED
+**Verdict**: APPROVED / CHANGES REQUESTED
 ```

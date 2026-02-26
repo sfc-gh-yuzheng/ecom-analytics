@@ -29,15 +29,14 @@ Before writing your review, read the following:
 
 ## Review Instructions
 
-Synthesise findings from ALL sources above into a single review. Specifically:
+Synthesise findings from ALL sources above into a single review. Be concise — aim for under 25 lines of markdown. Specifically:
 
-- **Map** each stakeholder requirement (from emails + issue) to the implementation. Did the model deliver what was asked for?
-- **Flag** any requirements that were mentioned in emails but NOT captured in the issue (these are easy to miss)
-- **Highlight** any email concerns that need follow-up (e.g., data quality warnings, timeline constraints)
-- **Verify** column-level alignment — does the model include the specific fields stakeholders requested?
-- End with **concrete recommended next steps** including any stakeholder notifications needed
+- **Map** each key stakeholder requirement to the implementation
+- **Flag** any requirements mentioned in emails but NOT in the issue
+- **Highlight** email concerns that need follow-up
+- **Verify** column-level alignment
 
-Post your review as a PR comment using `gh pr comment <number> --repo sfc-gh-yuzheng/ecom-analytics --body "<review>"`.
+To post: write your review to `/tmp/review-stakeholder.md`, then run `gh pr comment <number> --repo sfc-gh-yuzheng/ecom-analytics --body-file /tmp/review-stakeholder.md`.
 
 ## Review Format
 
@@ -47,21 +46,15 @@ Post your review as a PR comment using `gh pr comment <number> --repo sfc-gh-yuz
 **Source**: Stakeholder emails, GitHub issue
 
 ### Requirements Traceability
-| Requirement (from emails/issue) | Implemented? | Notes |
-|--------------------------------|-------------|-------|
-| <requirement 1>               | Yes/No/Partial | <details> |
-| <requirement 2>               | Yes/No/Partial | <details> |
+| Requirement | Status | Notes |
+|---|---|---|
+| <top 5-6 key requirements only> | ✅/❌/⚠️ | <brief detail> |
 
-### Key Stakeholder Concerns
-<Summarise concerns raised in email threads — data quality issues, PII handling, timeline. Are they addressed?>
+### Gaps & Concerns
+- <2-3 bullets: anything requested but missing, email-only requirements, outstanding concerns>
 
-### Implementation Gaps
-<Anything requested but not delivered? Anything built that wasn't requested?>
+### Next Steps
+- <1-3 concrete action items including stakeholder notifications>
 
-### Recommended Next Steps
-- <Action item 1 — e.g., notify stakeholder X about Y>
-- <Action item 2 — e.g., follow up on concern Z>
-- <Action item 3>
-
-### Verdict: APPROVED / CHANGES REQUESTED
+**Verdict**: APPROVED / CHANGES REQUESTED
 ```

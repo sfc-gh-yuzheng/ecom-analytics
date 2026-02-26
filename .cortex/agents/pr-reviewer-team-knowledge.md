@@ -30,15 +30,14 @@ Before writing your review, read the following:
 
 ## Review Instructions
 
-Synthesise findings from ALL sources above into a single review. Specifically:
+Synthesise findings from ALL sources above into a single review. Be concise — aim for under 25 lines of markdown. Specifically:
 
-- **Surface** specific Slack messages or meeting decisions relevant to this PR (quote them with attribution)
-- **Verify** that technical decisions made in discussions are reflected in the code (e.g., "Jordan noted in Slack that days_since columns are stale between builds — is this documented?")
-- **Flag** any warnings or past incidents mentioned in team discussions that apply (e.g., "James warned about the Q4 payment dedup issue — is the model using the corrected path?")
+- **Surface** 2-3 specific Slack messages or meeting decisions relevant to this PR (quote with attribution)
+- **Verify** that technical decisions from discussions are reflected in the code
+- **Flag** any warnings or past incidents that apply
 - **Check** if meeting action items were completed
-- End with **concrete recommended next steps** surfaced from team discussions
 
-Post your review as a PR comment using `gh pr comment <number> --repo sfc-gh-yuzheng/ecom-analytics --body "<review>"`.
+To post: write your review to `/tmp/review-team-knowledge.md`, then run `gh pr comment <number> --repo sfc-gh-yuzheng/ecom-analytics --body-file /tmp/review-team-knowledge.md`.
 
 ## Review Format
 
@@ -47,19 +46,14 @@ Post your review as a PR comment using `gh pr comment <number> --repo sfc-gh-yuz
 
 **Source**: Slack #data-platform, meeting transcripts
 
-### Relevant Team Discussions
-<Quote 2-3 specific Slack messages or meeting excerpts that are directly relevant to this PR. Include who said it and when.>
+### Key Team Context
+> <Quote 2-3 specific Slack/meeting excerpts relevant to this PR, with attribution>
 
-### Decision Verification
-<Were design decisions from meetings/Slack reflected in the code? Check specific items like materialization choice, join path, column calculations.>
+### Risk Flags
+- <2-3 bullets: warnings, past incidents, edge cases from team discussions that apply>
 
-### Risk Flags from Team Context
-<Any warnings, past incidents, or edge cases mentioned in team discussions that apply to this change?>
+### Next Steps
+- <1-3 action items surfaced from team discussions>
 
-### Recommended Next Steps
-- <Action item 1 — surfaced from team discussions>
-- <Action item 2>
-- <Action item 3>
-
-### Verdict: LGTM / NEEDS DISCUSSION
+**Verdict**: LGTM / NEEDS DISCUSSION
 ```

@@ -63,8 +63,10 @@ Review PR #<number> on repo sfc-gh-yuzheng/ecom-analytics.
 
 **Instructions**:
 1. Read the context files specified in your "Data Sources to Read" section
-2. Write your review following your exact review format
-3. Post it as a comment: `gh pr comment <number> --repo sfc-gh-yuzheng/ecom-analytics --body "<review>"`
+2. Write your review following your exact review format — keep it concise (under 25 lines of markdown)
+3. Write the review body to a temp file, then post:
+   echo '<review>' > /tmp/review-<agent-name>.md
+   gh pr comment <number> --repo sfc-gh-yuzheng/ecom-analytics --body-file /tmp/review-<agent-name>.md
 ```
 
 ### 4. Summarize
