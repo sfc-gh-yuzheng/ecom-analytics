@@ -232,3 +232,147 @@ This script:
 7. Verifies everything
 
 Safe to run multiple times. Takes ~2 minutes.
+
+---
+
+## Best Practices — Writing Skills, Agents, and Hooks
+
+This section documents the design principles applied to the custom skills, agents, and hooks in this project, drawn from Anthropic's skill authoring guidelines, Claude 4.x prompting best practices, and Snowflake Cortex Code extensibility documentation.
+
+### Skill Authoring
+
+**Progressive disclosure** is the core design principle. Skills load in three levels:
+
+| Level | What Loads | When |
+|-------|-----------|------|
+| 1. Metadata | `name` and `description` from YAML frontmatter | Always — injected into system prompt at startup |
+| 2. Instructions | Full SKILL.md body | When the user's request matches the description |
+| 3. Resources | Additional files in the skill directory (references, scripts) | Only when SKILL.md references them |
+
+This means the `description` field is the primary trigger mechanism. Write it carefully:
+
+```yaml
+# Good — third person, states WHAT + WHEN, specific triggers
+description: "Interprets issues against the business data architecture — domains,
+  PII classifications, naming conventions. Use when analyzing requirements,
+  assessing PII impact, or placing models in the correct dbt layer."
+
+# Bad — vague, first person
+description: "I can help with data architecture questions"
+```
+
+**Guidelines applied in this project:**
+
+- **Write descriptions in third person.** The description is injected into the system prompt. First/second person creates point-of-view confusion. Say "Interprets issues..." not "I interpret issues..." or "Use this to interpret..."
+- **Keep SKILL.md under ~500 lines.** If a skill grows beyond this, split reference content into separate files (e.g., `references/domains.md`) and link them from SKILL.md. Claude loads referenced files only when needed.
+- **Be specific about triggers.** The description should list concrete scenarios: "Use when analyzing requirements, assessing PII impact, evaluating data model changes." Vague descriptions like "Helps with data stuff" won't trigger reliably.
+- **Structure with clear headings.** Use `##` sections for distinct concerns. This helps Claude navigate the skill content once loaded.
+- **Match specificity to fragility.** For critical operations (database migrations, PII handling), use low-freedom instructions with exact commands. For creative tasks (report writing), use high-freedom guidance with examples.
+
+**Skill directory structure** (for larger skills):
+
+```
+my-skill/
+├── SKILL.md              # Core instructions (< 500 lines)
+├── references/           # Loaded on demand
+│   ├── domain-model.md
+│   └── compliance-rules.md
+└── scripts/              # Executable utilities
+    └── validate.py
+```
+
+### Agent Authoring
+
+Agents are autonomous subprocesses with their own system prompts. The YAML frontmatter configures their capabilities.
+
+**Key configuration options:**
+
+```yaml
+---
+name: my-agent
+description: "What this agent does and when to use it."
+tools: ["Read", "Glob", "Grep", "Bash"]  # Restrict to needed tools
+model: claude-sonnet-4-5                   # Optional model override
+---
+```
+
+**Guidelines applied in this project:**
+
+- **Restrict tool access.** Only grant tools the agent actually needs. Our review agents get `Read`, `Glob`, `Grep`, `Bash` — no `Write` or `Edit` because reviewers should not modify code. The orchestrator additionally gets `Task` to spawn sub-agents.
+- **Use plain language for rules.** Claude 4.x models are highly responsive to system prompts. Aggressive language like "CRITICAL: You MUST..." can cause overtriggering. Use direct, clear statements: "Do not merge pull requests" works as well as "CRITICAL: You CANNOT merge."
+- **Define data sources explicitly.** Each agent's prompt lists exactly which files to read and what to look for in them. This is more reliable than hoping the agent will find relevant context on its own.
+- **Provide structured output formats.** Include a template for the agent's output. This ensures consistency across runs and makes the output parseable.
+- **Use the Task tool for orchestration.** The orchestrator agent spawns sub-agents via the Task tool with `subagent_type: "general-purpose"`. Launch all sub-agents in a single message (parallel tool calls) for speed.
+
+**Swarm pattern** (used by the PR review orchestrator):
+
+```
+Orchestrator (pr-reviewer)
+├── spawns → Architecture reviewer (reads arch docs, audit trail)
+├── spawns → Stakeholder reviewer (reads emails, GitHub issue)
+└── spawns → Team Knowledge reviewer (reads Slack, meetings)
+```
+
+Each sub-agent works independently and posts its own output. The orchestrator summarises findings after all complete. This pattern scales well — add or remove reviewers without changing the others.
+
+**Worktree isolation** — when agents need to make file changes in parallel, use `worktree_isolation: true` to give each agent its own git worktree. Not needed for read-only agents like reviewers.
+
+### Hook Authoring
+
+Hooks are shell scripts that intercept tool calls at lifecycle points. They provide deterministic control — guaranteeing that checks always run, rather than relying on the model to remember.
+
+**Exit codes:**
+
+| Code | Meaning | Use Case |
+|------|---------|----------|
+| `0` | Allow | Validation passed, or hook doesn't apply |
+| `2` | Block | Policy violation — the tool call is rejected |
+
+**JSON output** (optional, on stdout) enables richer control:
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "allow",
+    "additionalContext": "Note: governance check passed for this file."
+  }
+}
+```
+
+**Guidelines applied in this project:**
+
+- **Keep hooks fast.** Hooks run synchronously before every matching tool call. Default timeout is 60 seconds. Our hooks use simple `grep` pattern matching — millisecond execution.
+- **Handle errors gracefully.** If your hook can't determine whether to allow or block, return `exit 0` (allow). A broken hook that blocks everything will halt the agent.
+- **Use `jq` for JSON parsing.** Hook input arrives on stdin as JSON. Parse with `jq -r '.tool_input.command'` rather than fragile string manipulation.
+- **Log decisions for auditability.** The governance hook writes every PASS/BLOCK decision to a Snowflake table (`GOVERNANCE_AUDIT`). This creates a tamper-resistant audit trail that the review agents can query.
+- **Scope matchers precisely.** Use regex in the `matcher` field: `"Edit|Write"` for file operations, `"Bash"` for shell commands, `"snowflake_sql_execute"` for SQL. Overly broad matchers slow everything down.
+- **Use fire-and-forget for logging.** Audit writes use `nohup snow sql ... &` so they don't block the agent while waiting for Snowflake round-trips.
+
+**Hook configuration** (in `~/.snowflake/cortex/hooks.json` or `.claude/settings.json`):
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [{
+          "type": "command",
+          "command": "bash hooks/governance_check.sh"
+        }]
+      }
+    ]
+  }
+}
+```
+
+**Three hook types:**
+
+| Type | Description | When to Use |
+|------|-------------|-------------|
+| `command` | Runs a shell script | Deterministic checks (pattern matching, linting, logging) |
+| `prompt` | Sends a prompt to an LLM | Complex validation too nuanced for regex |
+| `agent` | Spawns a multi-turn sub-agent | Deep verification requiring file reads and reasoning |
+
+For most governance and security use cases, `command` hooks are sufficient and fastest.

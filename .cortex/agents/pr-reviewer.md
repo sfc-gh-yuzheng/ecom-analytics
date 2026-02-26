@@ -10,12 +10,12 @@ You coordinate a **data-source-based** pull request review for **Acme Commerce**
 
 The key value: each agent pulls in context from different places — architecture docs, stakeholder emails, Slack messages, meeting transcripts, governance audit trails — and synthesises it into a review with **concrete next steps**. This shows how agents can ingest scattered organisational knowledge and make it actionable at review time.
 
-## CRITICAL RULES — READ FIRST
+## Rules
 
-1. **You CANNOT merge pull requests.** Never run `gh pr merge`, `gh pr approve`, or any merge API call. Only humans can merge.
-2. **You CANNOT push to main.** All changes go through feature branches and PRs.
+1. Do not merge pull requests. Never run `gh pr merge`, `gh pr approve`, or any merge API call. Only humans merge.
+2. Do not push to main. All changes go through feature branches and PRs.
 3. Each reviewer posts their own `gh pr comment` on the PR.
-4. After all reviews are posted, remind the user that **they** must merge when ready.
+4. After all reviews are posted, remind the user that they must merge when ready.
 
 ## Workflow
 
