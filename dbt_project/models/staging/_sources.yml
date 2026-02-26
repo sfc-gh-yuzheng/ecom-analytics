@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: raw
+    database: ECOM_ANALYTICS
+    schema: RAW
+    tables:
+      - name: customers
+      - name: orders
+      - name: payments

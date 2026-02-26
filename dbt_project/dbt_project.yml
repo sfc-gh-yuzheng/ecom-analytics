@@ -1,0 +1,20 @@
+name: 'ecom_analytics'
+version: '1.0.0'
+
+profile: 'ecom_analytics'
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  ecom_analytics:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: view
+    marts:
+      +materialized: table

@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: int_customer_orders
+    description: "Customer order aggregations - joins customers with their order history"
+    columns:
+      - name: customer_id
+        description: "Primary key"
+        tests:
+          - unique
+          - not_null
+      - name: number_of_orders
+        description: "Total number of orders placed by the customer"
+
+  - name: int_payment_totals
+    description: "Payment aggregations per order"
+    columns:
+      - name: order_id
+        description: "Primary key"
+        tests:
+          - unique
+          - not_null
+      - name: total_amount
+        description: "Total payment amount for the order"

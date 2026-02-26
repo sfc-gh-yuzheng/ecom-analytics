@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: "Staged customer data from raw source"
+    columns:
+      - name: customer_id
+        description: "Primary key"
+        tests:
+          - unique
+          - not_null
+      - name: email
+        description: "Customer email address (PII)"
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_orders
+    description: "Staged order data from raw source"
+    columns:
+      - name: order_id
+        description: "Primary key"
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: "Foreign key to stg_customers"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_customers')
+              field: customer_id
+      - name: status
+        description: "Order status"
+        tests:
+          - accepted_values:
+              values: ['placed', 'shipped', 'completed', 'returned']
+
+  - name: stg_payments
+    description: "Staged payment data from raw source"
+    columns:
+      - name: payment_id
+        description: "Primary key"
+        tests:
+          - unique
+          - not_null
+      - name: order_id
+        description: "Foreign key to stg_orders"
+        tests:
+          - not_null
+      - name: payment_method
+        description: "Payment method used"
+        tests:
+          - accepted_values:
+              values: ['credit_card', 'bank_transfer', 'gift_card', 'coupon']

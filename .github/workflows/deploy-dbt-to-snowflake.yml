@@ -1,0 +1,54 @@
+name: Deploy dbt to Snowflake
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dbt_project/**'
+
+jobs:
+  deploy:
+    name: Deploy & Build dbt Project
+    runs-on: ubuntu-latest
+
+    env:
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+      SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+      SNOWFLAKE_ROLE: ACCOUNTADMIN
+      SNOWFLAKE_WAREHOUSE: COMPUTE_WH
+      SNOWFLAKE_DATABASE: ECOM_ANALYTICS
+      SNOWFLAKE_SCHEMA: DBT_DEV
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Snowflake CLI
+        uses: Snowflake-Labs/snowflake-cli-action@v1
+        with:
+          default-config-file-path: .github/snowflake-config.toml
+
+      - name: Create target schema if not exists
+        run: |
+          snow sql -q "CREATE DATABASE IF NOT EXISTS ECOM_ANALYTICS;" -c ci
+          snow sql -q "CREATE SCHEMA IF NOT EXISTS ECOM_ANALYTICS.DBT_DEV;" -c ci
+
+      - name: Deploy dbt project
+        run: |
+          snow dbt deploy ECOM_ANALYTICS_PROJECT \
+            --source dbt_project \
+            --database ECOM_ANALYTICS \
+            --schema DBT_DEV \
+            -c ci
+
+      - name: Execute dbt build
+        run: |
+          snow dbt execute -c ci \
+            --database ECOM_ANALYTICS \
+            --schema DBT_DEV \
+            ECOM_ANALYTICS_PROJECT build
+
+      - name: Verify deployment
+        run: |
+          snow dbt list --in schema DBT_DEV --database ECOM_ANALYTICS -c ci

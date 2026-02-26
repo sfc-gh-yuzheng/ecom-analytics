@@ -1,0 +1,12 @@
+ecom_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: SFSEAPAC-YUZHENG_AZURE1
+      user: YUZHENG
+      role: ACCOUNTADMIN
+      warehouse: COMPUTE_WH
+      database: ECOM_ANALYTICS
+      schema: DBT_DEV
+      threads: 4
