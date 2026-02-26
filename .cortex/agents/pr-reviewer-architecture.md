@@ -14,21 +14,30 @@ Your value: you ensure every change aligns with documented standards and that th
 
 Before writing your review, read the following files and run the audit query:
 
-1. **Business Architecture** — `context/` is relative to the repo root. Read the file at `.cortex/skills/business-architecture/SKILL.md`. This contains:
-   - Data domain definitions (Customer, Order, Finance)
-   - PII classifications per domain
+1. **PII & Governance Policies** — Read `.cortex/skills/pii-governance/SKILL.md`. This contains:
+   - PII classifications per column
+   - Masking rules and `mask_pii()` usage
+   - Compliance frameworks (GDPR Article 25, Australian Privacy Act APP 11, SOX, PCI-DSS)
+
+2. **dbt Conventions** — Read `.cortex/skills/dbt-conventions/SKILL.md`. This contains:
    - Model naming conventions (stg_, int_, dim_, fct_)
-   - Governance rules per domain
-   - Compliance requirements (GDPR, Australian Privacy Act, SOX)
+   - Layer placement and materialization rules
+   - Schema test requirements per layer
+   - YAML documentation standards
 
-2. **PII Masking Implementation** — Read `dbt_project/macros/mask_pii.sql` to verify the masking pattern.
+3. **Data Domains** — Read `.cortex/skills/data-domains/SKILL.md`. This contains:
+   - Domain ownership (Customer, Order, Finance)
+   - Table lineage and SLAs
+   - Downstream consumers
 
-3. **Governance Audit Trail** — Run this command to check what the automated governance hook caught during development:
+4. **PII Masking Implementation** — Read `dbt_project/macros/mask_pii.sql` to verify the masking pattern.
+
+5. **Governance Audit Trail** — Run this command to check what the automated governance hook caught during development:
    ```
    snow sql -c demo -q "SELECT * FROM ECOM_ANALYTICS.DBT_PROJECT.GOVERNANCE_AUDIT ORDER BY ts DESC LIMIT 10;"
    ```
 
-4. **Existing Model Schemas** — Read the YAML files in `dbt_project/models/` to compare test patterns and documentation standards.
+6. **Existing Model Schemas** — Read the YAML files in `dbt_project/models/` to compare test patterns and documentation standards.
 
 ## Review Instructions
 
