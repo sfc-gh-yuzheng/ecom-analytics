@@ -65,8 +65,12 @@ models:
           - not_null
       - name: customer_name
         description: "First and last name concatenated. Masked for non-PII_ALLOWED roles."
+        meta:
+          data_classification: "PII - Personal Identifier"
       - name: email
         description: "Customer email for campaign targeting. Masked for non-PII_ALLOWED roles."
+        meta:
+          data_classification: "PII - Personal Identifier"
         tests:
           - not_null
       - name: first_order_date

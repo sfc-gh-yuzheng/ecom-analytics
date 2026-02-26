@@ -26,6 +26,8 @@ customer_spend as (
 ),
 
 -- Derive preferred payment method by frequency per customer
+-- Uses stg_payments directly (not int_payment_totals) because we need per-payment-row
+-- granularity to count method frequency. int_payment_totals aggregates to order level.
 payment_frequency as (
     select
         orders.customer_id,
