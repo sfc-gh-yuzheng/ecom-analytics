@@ -20,7 +20,7 @@ Run these commands to collect PR information:
 Read the changed model files directly from the repo to get full content.
 
 ### 2. Launch Three Reviewers in Parallel
-Use the Task tool to spawn all three agents **simultaneously** (in a single message with three Task tool calls). Each agent receives:
+Use the Task tool to spawn all three agents **simultaneously** (in a single message with three Task tool calls). Do NOT use `run_in_background` — foreground subagents have the permissions needed to write files and post `gh` comments. Each agent receives:
 - The PR number, title, and repo
 - The full diff
 - The full content of changed model files
