@@ -12,7 +12,7 @@ REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 REPO="sfc-gh-yuzheng/ecom-analytics"
 SNOWFLAKE_CONN="demo"
 DATABASE="ECOM_ANALYTICS"
-BASELINE_COMMIT="598ff17"  # Latest baseline commit — includes reset script + best practices
+BASELINE_TAG="demo-baseline"  # Git tag marking the clean starting point
 
 cd "$REPO_DIR"
 
@@ -60,8 +60,8 @@ fi
 
 # ----- 3. Reset git to baseline commit -----
 echo ""
-echo "[3/6] Resetting git to baseline (${BASELINE_COMMIT})..."
-git reset --hard "$BASELINE_COMMIT"
+echo "[3/6] Resetting git to baseline (${BASELINE_TAG})..."
+git reset --hard "$BASELINE_TAG"
 git push origin main --force
 git clean -fd
 echo "  On commit: $(git log --oneline -1)"
