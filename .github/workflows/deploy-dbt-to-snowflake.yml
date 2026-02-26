@@ -12,20 +12,20 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-      SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-      SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
-      SNOWFLAKE_ROLE: ACCOUNTADMIN
-      SNOWFLAKE_WAREHOUSE: COMPUTE_WH
-      SNOWFLAKE_DATABASE: ECOM_ANALYTICS
-      SNOWFLAKE_SCHEMA: DBT_DEV
+      SNOWFLAKE_CONNECTIONS_CI_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_CONNECTIONS_CI_USER: ${{ secrets.SNOWFLAKE_USER }}
+      SNOWFLAKE_CONNECTIONS_CI_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+      SNOWFLAKE_CONNECTIONS_CI_ROLE: ACCOUNTADMIN
+      SNOWFLAKE_CONNECTIONS_CI_WAREHOUSE: COMPUTE_WH
+      SNOWFLAKE_CONNECTIONS_CI_DATABASE: ECOM_ANALYTICS
+      SNOWFLAKE_CONNECTIONS_CI_SCHEMA: DBT_DEV
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Install Snowflake CLI
-        uses: Snowflake-Labs/snowflake-cli-action@v1
+        uses: snowflakedb/snowflake-cli-action@v2.0
         with:
           default-config-file-path: .github/snowflake-config.toml
 
