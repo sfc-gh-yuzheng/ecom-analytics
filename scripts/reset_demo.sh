@@ -139,6 +139,7 @@ snow dbt deploy ECOM_ANALYTICS_PROJECT \
   --source dbt_project \
   --database "$DATABASE" \
   --schema DBT_PROJECT \
+  --force \
   -c "$SNOWFLAKE_CONN" 2>/dev/null || {
   echo "  WARNING: dbt deploy failed."
 }
@@ -147,8 +148,8 @@ echo "  Running dbt build..."
 snow dbt execute -c "$SNOWFLAKE_CONN" \
   --database "$DATABASE" \
   --schema DBT_PROJECT \
-  ECOM_ANALYTICS_PROJECT build 2>&1 | tail -5 || {
-  echo "  WARNING: dbt build failed."
+  ECOM_ANALYTICS_PROJECT build 2>&1 || {
+  echo "  WARNING: dbt build had issues."
 }
 
 # ----- 7. Verify -----
