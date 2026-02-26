@@ -1,6 +1,6 @@
 # Acme Commerce — dbt Analytics with Cortex Code
 
-**Demo project for Data Saturday Brisbane** — showing how AI coding agents can build, govern, and review dbt models on Snowflake using [Cortex Code](https://docs.snowflake.com/en/user-guide/cortex-code/cortex-code).
+A demo project showing how AI coding agents can build, govern, and review dbt models on Snowflake using [Cortex Code](https://docs.snowflake.com/en/user-guide/cortex-code/cortex-code).
 
 ---
 
