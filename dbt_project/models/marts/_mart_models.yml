@@ -50,3 +50,53 @@ models:
         tests:
           - accepted_values:
               values: ['placed', 'shipped', 'completed', 'returned']
+
+  - name: fct_customer_lifetime_value
+    description: >
+      Customer lifetime value model with 4-tier segmentation for the Q2 retention campaign.
+      Combines order history, payment data, and customer details. PII columns are masked
+      via mask_pii() macro. days_since_* columns are point-in-time — values reflect the
+      last dbt build, not real-time.
+    columns:
+      - name: customer_id
+        description: "Primary key — unique customer identifier"
+        tests:
+          - unique
+          - not_null
+      - name: customer_name
+        description: "First and last name concatenated. Masked for non-PII_ALLOWED roles."
+      - name: email
+        description: "Customer email for campaign targeting. Masked for non-PII_ALLOWED roles."
+        tests:
+          - not_null
+      - name: first_order_date
+        description: "Date of the customer's first order"
+      - name: most_recent_order_date
+        description: "Date of the customer's most recent order"
+      - name: number_of_orders
+        description: "Total distinct orders placed by the customer"
+        tests:
+          - not_null
+      - name: lifetime_spend
+        description: "Sum of all payment amounts across all orders"
+        tests:
+          - not_null
+      - name: avg_order_value
+        description: "Average total payment per order (handles split payments via int_payment_totals)"
+        tests:
+          - not_null
+      - name: days_since_first_order
+        description: "Days between first order and the dbt build date — stale between refreshes"
+      - name: days_since_last_order
+        description: "Days between most recent order and the dbt build date — used for churn risk"
+      - name: preferred_payment_method
+        description: "Payment method used most frequently by the customer (by count, not recency)"
+      - name: customer_segment
+        description: >
+          4-tier classification: VIP (≥$500 spend, ordered ≤90 days), Regular (≥$200, ≤90 days),
+          At-Risk (≥$200, >90 days — primary campaign targets), New (all others).
+          Segment is point-in-time and may shift between builds.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['VIP', 'Regular', 'At-Risk', 'New']
