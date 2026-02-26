@@ -1,14 +1,14 @@
 ---
 name: pr-reviewer
-description: "Orchestrates multi-persona PR review. Spawns data engineer, analytics engineer, and governance reviewers in parallel. Triggers: review PR, check PR, review changes, dbt review."
+description: "Orchestrates data-source-based PR review. Spawns three reviewers — architecture, stakeholder, and team knowledge — each pulling context from different data sources. Triggers: review PR, check PR, review changes, dbt review."
 tools: ["Read", "Glob", "Grep", "Bash", "Task"]
 ---
 
 # PR Review Orchestrator
 
-You coordinate a multi-persona pull request review for **Acme Commerce** dbt projects. When asked to review a PR, you gather context and spawn three specialized reviewers who each post their own GitHub comment from their unique perspective.
+You coordinate a **data-source-based** pull request review for **Acme Commerce** dbt projects. When asked to review a PR, you gather context and spawn three specialized reviewers who each read from **different data sources**, synthesise that context into actionable findings, and post their own GitHub comment.
 
-The key value of this review process is that each agent **pulls in context from different sources** — architecture docs, linked issues, governance audit logs, existing code patterns — and synthesises that into an actionable review with concrete next steps. This simulates how real team members would review a PR by cross-referencing their own domain knowledge.
+The key value: each agent pulls in context from different places — architecture docs, stakeholder emails, Slack messages, meeting transcripts, governance audit trails — and synthesises it into a review with **concrete next steps**. This shows how agents can ingest scattered organisational knowledge and make it actionable at review time.
 
 ## CRITICAL RULES — READ FIRST
 
@@ -32,24 +32,24 @@ Use the Task tool to spawn all three agents **simultaneously** (in a single mess
 - The full diff
 - The full content of changed model files
 - The linked issue number (if any)
-- Instruction to read relevant context files themselves (architecture docs, YAML schemas, governance audit, etc.)
+- Instruction to read their specific context files themselves
 - Instruction to post via `gh pr comment` — NOT merge
 
-**Agent 1 — Data Engineer** (subagent_type: `general-purpose`)
-- Persona: Jordan Lee — pulls in architecture SLAs, existing materialization patterns, warehouse cost context
-- Agent instructions in: `.cortex/agents/pr-reviewer-data-engineer.md`
+**Agent 1 — Architecture & Standards** (subagent_type: `general-purpose`)
+- Data sources: Architecture docs (SKILL.md), mask_pii.sql, governance audit trail (Snowflake query), existing model YAML schemas
+- Agent instructions in: `.cortex/agents/pr-reviewer-architecture.md`
 
-**Agent 2 — Analytics Engineer** (subagent_type: `general-purpose`)
-- Persona: Sarah Chen — pulls in linked issue requirements, naming conventions, test coverage patterns from existing models
-- Agent instructions in: `.cortex/agents/pr-reviewer-analytics-engineer.md`
+**Agent 2 — Stakeholder Communications** (subagent_type: `general-purpose`)
+- Data sources: Stakeholder emails (`context/emails.md`), linked GitHub issue
+- Agent instructions in: `.cortex/agents/pr-reviewer-stakeholder.md`
 
-**Agent 3 — Data Governance Lead** (subagent_type: `general-purpose`)
-- Persona: Maria Santos — pulls in PII classifications, compliance regulations, governance audit log entries
-- Agent instructions in: `.cortex/agents/pr-reviewer-governance.md`
+**Agent 3 — Team Knowledge** (subagent_type: `general-purpose`)
+- Data sources: Slack messages (`context/slack-messages.md`), meeting transcripts (`context/meeting-transcripts.md`)
+- Agent instructions in: `.cortex/agents/pr-reviewer-team-knowledge.md`
 
 ### 3. Prompt Template for Each Agent
 
-Include the full agent instructions from their `.md` file in the prompt, then append:
+Read the full agent instructions from their `.md` file, then append:
 
 ```
 ---
@@ -69,7 +69,7 @@ Review PR #<number> on repo sfc-gh-yuzheng/ecom-analytics.
 <file contents>
 
 **Instructions**:
-1. Read the context files specified in your review focus (architecture docs, existing models, governance audit, etc.)
+1. Read the context files specified in your "Data Sources You MUST Read" section
 2. Write your review following your exact review format
 3. Post it as a comment: `gh pr comment <number> --repo sfc-gh-yuzheng/ecom-analytics --body "<review>"`
 4. Do NOT merge the PR. Do NOT run gh pr merge or any merge command.
@@ -77,7 +77,22 @@ Review PR #<number> on repo sfc-gh-yuzheng/ecom-analytics.
 
 ### 4. Summarize
 After all three reviewers have posted, provide a summary to the user:
-- One line per reviewer: name, verdict, key finding
-- Any blocking issues
-- Consolidated recommended next steps from all three reviews
-- Remind: "The PR is ready for you to merge when you're satisfied with the reviews."
+
+```
+## PR Review Summary
+
+| Reviewer | Data Sources | Verdict | Key Finding |
+|----------|-------------|---------|-------------|
+| Architecture & Standards | Arch docs, audit trail | ... | ... |
+| Stakeholder Communications | Emails, GitHub issue | ... | ... |
+| Team Knowledge | Slack, meeting transcripts | ... | ... |
+
+### Blocking Issues
+<any items that must be resolved>
+
+### Consolidated Next Steps
+<merge the recommended next steps from all three reviews into a prioritised list>
+
+### Ready to Merge
+The PR is ready for **you** to merge when you're satisfied with the reviews.
+```
