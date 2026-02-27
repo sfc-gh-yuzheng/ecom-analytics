@@ -50,3 +50,52 @@ models:
         tests:
           - accepted_values:
               values: ['placed', 'shipped', 'completed', 'returned']
+
+  - name: fct_customer_lifetime_value
+    description: >
+      Customer lifetime value model with spend metrics and segmentation for
+      the Q2 retention campaign. Segments classify customers into VIP, Regular,
+      At-Risk, and New tiers based on lifetime spend and recency thresholds.
+      Note: days_since_* columns and customer_segment are point-in-time values
+      computed at build time and will be stale between refreshes.
+    columns:
+      - name: customer_id
+        description: "Primary key — unique customer identifier"
+        tests:
+          - unique
+          - not_null
+      - name: customer_name
+        description: "Customer full name (first + last), masked for non-privileged roles"
+      - name: email
+        description: "Customer email address, masked for non-privileged roles via mask_pii()"
+      - name: lifetime_spend
+        description: "Total amount spent across all orders (sum of all payment amounts)"
+        tests:
+          - not_null
+      - name: total_orders
+        description: "Count of distinct orders placed by the customer"
+        tests:
+          - not_null
+      - name: average_order_value
+        description: "Average total payment per order (lifetime_spend / total_orders). Zero if no orders."
+        tests:
+          - not_null
+      - name: first_order_date
+        description: "Date of the customer's first order"
+      - name: most_recent_order_date
+        description: "Date of the customer's most recent order"
+      - name: days_since_first_order
+        description: "Days between first order and build date. Stale between refreshes."
+      - name: days_since_last_order
+        description: "Days between most recent order and build date. Churn risk indicator. Stale between refreshes."
+      - name: preferred_payment_method
+        description: "Payment method used most frequently by the customer across all orders"
+      - name: customer_segment
+        description: >
+          Customer segment classification: VIP (spend >= $500, ordered within 90 days),
+          Regular (spend >= $200, ordered within 90 days), At-Risk (spend >= $200,
+          no orders in 90 days), New (spend < $200). Point-in-time at build.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['VIP', 'Regular', 'At-Risk', 'New']

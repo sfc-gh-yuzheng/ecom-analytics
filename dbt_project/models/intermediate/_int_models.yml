@@ -22,3 +22,14 @@ models:
           - not_null
       - name: total_amount
         description: "Total payment amount for the order"
+
+  - name: int_customer_payment_methods
+    description: "Most frequently used payment method per customer, derived from payment count across all orders"
+    columns:
+      - name: customer_id
+        description: "Primary key"
+        tests:
+          - unique
+          - not_null
+      - name: preferred_payment_method
+        description: "The payment method used most frequently by the customer (ties broken alphabetically)"
