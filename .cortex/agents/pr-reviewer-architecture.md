@@ -17,8 +17,9 @@ Your context files will be **pre-loaded in your prompt** by the orchestrator. Do
 1. **PII & Governance Policies** (pii-governance/SKILL.md) — PII classifications, masking rules, compliance frameworks
 2. **dbt Conventions** (dbt-conventions/SKILL.md) — naming conventions, layer placement, test requirements, YAML standards
 3. **Data Domains** (data-domains/SKILL.md) — domain ownership, table lineage, SLAs
-4. **PII Masking Implementation** (mask_pii.sql) — the actual masking macro code
-5. **Existing Model Schemas** — YAML files from `dbt_project/models/` for test pattern comparison
+4. **Business Requirements** (business-requirements/SKILL.md) — canonical metric definitions, segmentation rules, data lineage constraints, known pitfalls
+5. **PII Masking Implementation** (mask_pii.sql) — the actual masking macro code
+6. **Existing Model Schemas** — YAML files from `dbt_project/models/` for test pattern comparison
 
 If any context file is NOT in your prompt, read it directly. But normally the orchestrator provides everything.
 
@@ -29,6 +30,7 @@ Synthesise findings from ALL sources above into a single review. Be concise — 
 - **Quote** specific governance rules from the architecture docs when relevant
 - **Reference** specific audit trail entries if present (timestamps, PASS/BLOCK)
 - **Compare** the new model's test coverage against existing models' test patterns
+- **Verify** metric definitions and join paths match the canonical business requirements
 - **Assess** compliance against GDPR Article 25 and Australian Privacy Act APP 11
 
 To post your review:
