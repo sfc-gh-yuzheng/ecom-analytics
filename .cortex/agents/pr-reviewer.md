@@ -27,6 +27,7 @@ Read the changed model files directly from the repo to get full content.
 - `.cortex/skills/pii-governance/SKILL.md` (for Architecture agent)
 - `.cortex/skills/dbt-conventions/SKILL.md` (for Architecture agent)
 - `.cortex/skills/data-domains/SKILL.md` (for Architecture agent)
+- `.cortex/skills/business-requirements/SKILL.md` (for Architecture agent)
 - `dbt_project/macros/mask_pii.sql` (for Architecture agent)
 - All existing YAML schema files in `dbt_project/models/` (for Architecture agent)
 
@@ -48,7 +49,7 @@ Each agent receives in its prompt:
 - Instruction to post via `gh pr comment`
 
 **Agent 1 — Architecture & Standards** (subagent_type: `general-purpose`)
-- Context to embed: pii-governance SKILL.md, dbt-conventions SKILL.md, data-domains SKILL.md, mask_pii.sql, existing YAML schemas
+- Context to embed: pii-governance SKILL.md, dbt-conventions SKILL.md, data-domains SKILL.md, business-requirements SKILL.md, mask_pii.sql, existing YAML schemas
 - Review instructions from: `.cortex/agents/pr-reviewer-architecture.md`
 
 **Agent 2 — Stakeholder Communications** (subagent_type: `general-purpose`)
