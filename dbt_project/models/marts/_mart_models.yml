@@ -49,4 +49,61 @@ models:
         description: "Order status"
         tests:
           - accepted_values:
-              values: ['placed', 'shipped', 'completed', 'returned']
+              arguments:
+                values: ['placed', 'shipped', 'completed', 'returned']
+
+  - name: fct_customer_lifetime_value
+    description: >
+      Customer lifetime value with 4-tier segmentation for Marketing retention campaigns.
+      Grain: one row per customer. PII columns (email, customer_name) masked via mask_pii()
+      for non-PII_ALLOWED roles. days_since_* and customer_segment columns are point-in-time
+      values computed at build time — they become stale between dbt runs.
+    columns:
+      - name: customer_id
+        description: "Primary key — unique customer identifier"
+        tests:
+          - unique
+          - not_null
+      - name: customer_name
+        description: "First and last name concatenated. Masked for non-PII_ALLOWED roles."
+        config:
+          meta:
+            data_classification: "PII - Personal Identifier"
+        tests:
+          - not_null
+      - name: email
+        description: "Customer email address. Masked for non-PII_ALLOWED roles."
+        config:
+          meta:
+            data_classification: "PII - Personal Identifier"
+        tests:
+          - not_null
+      - name: lifetime_spend
+        description: "Total payment amount across all orders. Sourced through int_payment_totals to handle Q4 payment dedup."
+        tests:
+          - not_null
+      - name: total_orders
+        description: "Count of distinct orders placed by the customer."
+        tests:
+          - not_null
+      - name: average_order_value
+        description: "Lifetime spend divided by total orders. Zero for customers with no orders."
+        tests:
+          - not_null
+      - name: days_since_first_order
+        description: "Calendar days between the customer's first order and today. Stale between builds."
+      - name: days_since_last_order
+        description: "Calendar days between the customer's most recent order and today. Stale between builds."
+      - name: preferred_payment_method
+        description: "The payment method used most frequently across all orders. Ties broken alphabetically."
+      - name: customer_segment
+        description: >
+          4-tier segmentation: VIP (spend >= $500, ordered within 90 days),
+          Regular (spend >= $200, ordered within 90 days),
+          At-Risk (spend >= $200, no orders in 90 days),
+          New (spend < $200). Evaluated in priority order — first match wins.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['VIP', 'Regular', 'At-Risk', 'New']

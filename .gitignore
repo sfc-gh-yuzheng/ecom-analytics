@@ -9,3 +9,7 @@ dbt_project/profiles.yml
 
 # Environment
 .env
+.venv/
+
+# dbt user config
+dbt_project/.user.yml
