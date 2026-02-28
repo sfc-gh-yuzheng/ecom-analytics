@@ -26,6 +26,57 @@ models:
         tests:
           - not_null
 
+  - name: fct_customer_lifetime_value
+    description: >
+      Customer lifetime value with 4-tier segmentation for the Q2 retention campaign.
+      Grain: one row per customer. PII columns (email, customer_name) masked via mask_pii().
+      days_since_* and customer_segment are point-in-time values — stale between table builds.
+    columns:
+      - name: customer_id
+        description: "Primary key — unique customer identifier"
+        tests:
+          - unique
+          - not_null
+      - name: customer_name
+        description: "First and last name concatenated. Masked for non-PII_ALLOWED roles."
+        meta:
+          data_classification: "PII - Personal Identifier"
+        tests:
+          - not_null
+      - name: email
+        description: "Customer email address. Masked for non-PII_ALLOWED roles."
+        meta:
+          data_classification: "PII - Personal Identifier"
+        tests:
+          - not_null
+      - name: lifetime_spend
+        description: "Total payment amount across all orders, sourced via int_payment_totals to handle payment dedup."
+        tests:
+          - not_null
+      - name: total_orders
+        description: "Count of distinct orders placed by the customer."
+        tests:
+          - not_null
+      - name: average_order_value
+        description: "Lifetime spend divided by total orders. Zero for customers with no orders."
+        tests:
+          - not_null
+      - name: days_since_first_order
+        description: "Calendar days between first order and today. Stale between builds."
+      - name: days_since_last_order
+        description: "Calendar days between most recent order and today. Stale between builds."
+      - name: customer_segment
+        description: >
+          4-tier classification: VIP (spend >= $500, last order <= 90 days),
+          Regular (spend >= $200, last order <= 90 days),
+          At-Risk (spend >= $200, last order > 90 days),
+          New (spend < $200). At-Risk is the primary retention campaign target.
+        tests:
+          - accepted_values:
+              values: ['VIP', 'Regular', 'At-Risk', 'New']
+      - name: preferred_payment_method
+        description: "Most frequently used payment method across all orders. Ties broken alphabetically."
+
   - name: fct_orders
     description: "Order fact table with payment details"
     columns:
