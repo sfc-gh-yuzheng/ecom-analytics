@@ -26,6 +26,56 @@ models:
         tests:
           - not_null
 
+  - name: fct_customer_lifetime_value
+    description: >
+      Customer lifetime value with 4-tier segmentation for retention campaign targeting.
+      Joins through int_customer_orders and int_payment_totals. PII columns masked via mask_pii().
+      days_since_first_order and days_since_last_order are point-in-time calculations — values
+      become stale between dbt builds. Segment classification is also point-in-time — customers
+      near thresholds may flip segments between builds.
+    columns:
+      - name: customer_id
+        description: "Primary key — unique customer identifier"
+        tests:
+          - unique
+          - not_null
+      - name: email
+        description: "Customer email, masked for roles without PII_ALLOWED"
+        meta:
+          data_classification: "PII - Personal Identifier"
+        tests:
+          - not_null
+      - name: customer_name
+        description: "First and last name concatenated, masked for roles without PII_ALLOWED"
+        meta:
+          data_classification: "PII - Personal Identifier"
+        tests:
+          - not_null
+      - name: total_orders
+        description: "Total number of distinct orders placed by the customer"
+        tests:
+          - not_null
+      - name: total_lifetime_spend
+        description: "Sum of all payment amounts across all orders, sourced from int_payment_totals"
+        tests:
+          - not_null
+      - name: avg_order_value
+        description: "Average total payment per order (total_lifetime_spend / total_orders). Accounts for split payments since int_payment_totals aggregates at order level"
+        tests:
+          - not_null
+      - name: days_since_first_order
+        description: "Days between the customer's first order and the current date at build time. Stale between builds"
+      - name: days_since_last_order
+        description: "Days between the customer's most recent order and the current date at build time. Used as churn risk indicator. Stale between builds"
+      - name: preferred_payment_method
+        description: "The payment method used most frequently by the customer across all payments. Ties broken alphabetically"
+      - name: customer_segment
+        description: "4-tier classification: VIP (spend >= $500, ordered within 90 days), Regular (spend >= $200, ordered within 90 days), At-Risk (spend >= $200, no order in 90 days), New (all others)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['VIP', 'Regular', 'At-Risk', 'New']
+
   - name: fct_orders
     description: "Order fact table with payment details"
     columns:
